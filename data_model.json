@@ -1,0 +1,83 @@
+[
+    {
+        "name": "contract name",
+        "tenant": "tenant name",
+        "scope": "app/vrf/tenant/global",
+        "source": [
+            {
+                "name": "epg name",
+                "app": "epg application profile name",
+                "tenant": "epg tenant name",
+                "type": "epg"
+            },
+            {
+                "name": "EXTEPG name",
+                "tenant": "tenant name",
+                "type": "L3out"
+            }
+        ],
+        "destination": [
+            {
+                "name": "EPG name",
+                "app": "epg application profile name",
+                "tenan": "tenant name",
+                "type": "epg"
+            }
+        ],
+        "subjects": [
+            {
+                "name": "subject name",
+                "filters": [
+                    {
+                        "name": "web",
+                        "action": "permit/deny",
+                        "entries": [
+                            {
+                                "name": "http",
+                                "ether_type": "tcp",
+                                "src_port": "",
+                                "dst_port": "80-80"
+                            },
+                            {
+                                "name": "httpa",
+                                "ether_type": "tcp",
+                                "src_port": "",
+                                "dst_port": "8080-8080"
+                            }
+                        
+                    ]
+                },
+                {
+                    "name": "webs",
+                    "action": "permit",
+                    "entries": [
+                        {
+                            "name": "https",
+                            "ether_type": "tcp",
+                            "src_port": "",
+                            "dst_port": "443-443"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "subject name 2",
+            "filters": [
+                {
+                    "name": "dns",
+                    "action": "permit",
+                    "entries": [
+                        {
+                            "name": "dns_udp",
+                            "ether_type": "udp",
+                            "src_port": "",
+                            "dst_port": "53-53"
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+]
