@@ -57,7 +57,8 @@ contracts.contract2excel(list)
   - [ ] EPG/Subject lables
   - [ ] Preferred group membership
   - [ ] L3Out Ext-EPG network details
-  - [ ] Contract master membership
+  - [ ] Master EPG membership
+  - [ ] Intra-EPG contracts
  
  
  ## Notes

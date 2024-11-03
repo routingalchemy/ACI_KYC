@@ -1,8 +1,16 @@
+#!/usr/bin/env python
+
 import requests
 from openpyxl import Workbook
 from openpyxl import load_workbook
 import json
 
+__author__ = "Richard Buknicz"
+__copyright__ = "Copyright 2024, Routingalchemy ACI_KYC Project"
+__license__ = "GPL"
+__version__ = "0.2"
+__maintainer__ = "Richard Buknicz"
+__status__ = "Production"
 
 class aci_kyc:
     """ACI Know Your Contracts. A Contract exporter and visualiser tool"""
@@ -294,7 +302,14 @@ class aci_kyc:
                             ws["K{}".format(eni + entry_row_offset)] = filter_it[
                                 "entries"
                             ][eni]["tcprules"]
+                            ws.merge_cells(
+                                "D{}:D{}".format(fmfrom, fmfrom + entry_size - 1)
+                            )
+                            ws.merge_cells(
+                                "E{}:E{}".format(fmfrom, fmfrom + entry_size - 1)
+                            )
                         entry_row_offset += entry_size
+                        ws.merge_cells("C{}:C{}".format(smfrom, entry_row_offset - 1))
         wb.remove(wb["template"])
         wb.save("contracts.xlsx")
 
@@ -315,7 +330,7 @@ class aci_kyc:
                 return changeme
 
 
-#contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
-#contracts.apic_token()
-#list = contracts.all_contracts()
-#contracts.contract2excel(list)
+contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
+contracts.apic_token()
+list = contracts.all_contracts()
+contracts.contract2excel(list)
