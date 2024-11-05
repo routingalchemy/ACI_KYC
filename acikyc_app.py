@@ -12,6 +12,7 @@ __version__ = "0.2"
 __maintainer__ = "Richard Buknicz"
 __status__ = "Production"
 
+
 class aci_kyc:
     """ACI Know Your Contracts. A Contract exporter and visualiser tool"""
 
@@ -148,95 +149,107 @@ class aci_kyc:
                         ],
                     }
                 )
-            if "vzRsSubjFiltAtt" in brcp_dn_imdata.keys():
-                for i in subject:
-                    if (
-                        brcp_dn_imdata["vzRsSubjFiltAtt"]["attributes"]["dn"].split(
-                            "/"
-                        )[-2][5:]
-                    ) in i["name"]:
+                self.url = "/api/node/mo/{}.json?query-target=subtree".format(
+                    brcp_dn_imdata["vzSubj"]["attributes"]["dn"]
+                )
+                subject_dn_data = self.__api_get()
+                for subject_dn_imdata in subject_dn_data["imdata"]:
+                    sgraph = "N/A"
+                    if "vzRsSubjGraphAtt" in subject_dn_imdata.keys():
+                        sgraph = subject_dn_imdata["vzRsSubjGraphAtt"]["attributes"][
+                            "tnVnsAbsGraphName"
+                        ]
+                    if ("vzRsSubjFiltAtt" or "vzRsFiltAtt") in subject_dn_imdata.keys():
+                        fltatt = next(iter(subject_dn_imdata.keys()))
                         filter.append(
                             {
-                                "action": brcp_dn_imdata["vzRsSubjFiltAtt"][
-                                    "attributes"
-                                ]["action"]
+                                "action": subject_dn_imdata[fltatt]["attributes"][
+                                    "action"
+                                ]
                             }
                         )
-                        break  # if the subject attachment name mathces the subject name assiign the subject action to the filter
-                if brcp_dn_imdata["vzRsSubjFiltAtt"]["attributes"]["tDn"] != "":
-                    self.url = "/api/node/mo/{}.json?query-target=subtree".format(
-                        brcp_dn_imdata["vzRsSubjFiltAtt"]["attributes"]["tDn"]
-                    )  # set the filter url
-                    filter_dn_data = self.__api_get()
-                    entries = []
-                    for filter_dn_imdata in filter_dn_data["imdata"]:
-                        if "vzFilter" in filter_dn_imdata.keys():
-                            filter[len(filter) - 1]["name"] = filter_dn_imdata[
-                                "vzFilter"
-                            ]["attributes"]["name"]
-                        if "vzEntry" in filter_dn_imdata.keys():
-                            entries.append(
-                                {
-                                    "name": filter_dn_imdata["vzEntry"]["attributes"][
-                                        "dn"
-                                    ].split("/")[-1][2:],
-                                    "etht": filter_dn_imdata["vzEntry"]["attributes"][
-                                        "etherT"
-                                    ],
-                                    "sport": "{}-{}".format(
-                                        self.__object_norm(
-                                            filter_dn_imdata["vzEntry"]["attributes"][
-                                                "sFromPort"
-                                            ]
-                                        ),
-                                        self.__object_norm(
-                                            filter_dn_imdata["vzEntry"]["attributes"][
-                                                "sToPort"
-                                            ]
-                                        ),
-                                    ),
-                                    "dport": "{}-{}".format(
-                                        self.__object_norm(
-                                            filter_dn_imdata["vzEntry"]["attributes"][
-                                                "dFromPort"
-                                            ]
-                                        ),
-                                        self.__object_norm(
-                                            filter_dn_imdata["vzEntry"]["attributes"][
-                                                "dToPort"
-                                            ]
-                                        ),
-                                    ),
-                                    "stateful": filter_dn_imdata["vzEntry"][
-                                        "attributes"
-                                    ]["stateful"],
-                                    "tcprules": filter_dn_imdata["vzEntry"][
-                                        "attributes"
-                                    ]["tcpRules"],
-                                }
-                            )
-                            # icmpV4T and icmpV6T
-                    filter[len(filter) - 1]["entries"] = entries
-                    i["filter"] = filter
+                        if subject_dn_imdata[fltatt]["attributes"]["tDn"] != "":
+                            self.url = (
+                                "/api/node/mo/{}.json?query-target=subtree".format(
+                                    subject_dn_imdata[fltatt]["attributes"]["tDn"]
+                                )
+                            )  # set the filter url
+                            filter_dn_data = self.__api_get()
+                            entries = []
+                            for filter_dn_imdata in filter_dn_data["imdata"]:
+                                if "vzFilter" in filter_dn_imdata.keys():
+                                    filter[len(filter) - 1]["name"] = filter_dn_imdata[
+                                        "vzFilter"
+                                    ]["attributes"]["name"]
+                                if "vzEntry" in filter_dn_imdata.keys():
+                                    entries.append(
+                                        {
+                                            "name": filter_dn_imdata["vzEntry"][
+                                                "attributes"
+                                            ]["dn"].split("/")[-1][2:],
+                                            "etht": filter_dn_imdata["vzEntry"][
+                                                "attributes"
+                                            ]["etherT"],
+                                            "sport": "{}-{}".format(
+                                                self.__object_norm(
+                                                    filter_dn_imdata["vzEntry"][
+                                                        "attributes"
+                                                    ]["sFromPort"]
+                                                ),
+                                                self.__object_norm(
+                                                    filter_dn_imdata["vzEntry"][
+                                                        "attributes"
+                                                    ]["sToPort"]
+                                                ),
+                                            ),
+                                            "dport": "{}-{}".format(
+                                                self.__object_norm(
+                                                    filter_dn_imdata["vzEntry"][
+                                                        "attributes"
+                                                    ]["dFromPort"]
+                                                ),
+                                                self.__object_norm(
+                                                    filter_dn_imdata["vzEntry"][
+                                                        "attributes"
+                                                    ]["dToPort"]
+                                                ),
+                                            ),
+                                            "stateful": filter_dn_imdata["vzEntry"][
+                                                "attributes"
+                                            ]["stateful"],
+                                            "tcprules": filter_dn_imdata["vzEntry"][
+                                                "attributes"
+                                            ]["tcpRules"],
+                                        }
+                                    )
+                                    # icmpV4T and icmpV6T
+                            filter[len(filter) - 1]["entries"] = entries
+                            subject[len(subject) - 1]["filter"] = filter
+                        subject[len(subject) - 1]["sgraph"] = sgraph
         return source_grp, destination, subject
 
-    def all_contracts(self):
-        """Get all contracts from the fabric (Class)"""
+    def contract_info(self, **kwargs):
+        """Get contract info from the fabric"""
         contract_list = []
-        self.url = "/api/node/class/vzBrCP.json"
-        brcp_class_data = self.__api_get()
-        for brcp_class_imdata in brcp_class_data["imdata"]:
+        if kwargs:
+            self.url = "/api/node/mo/uni/tn-{}/brc-{}.json".format(
+                kwargs["tenant"], kwargs["contract"]
+            )
+        else:
+            self.url = "/api/node/class/vzBrCP.json"
+        brcp_data = self.__api_get()
+        for brcp_imdata in brcp_data["imdata"]:
             contract_list.append(
                 {
-                    "name": brcp_class_imdata["vzBrCP"]["attributes"]["name"],
-                    "tenant": brcp_class_imdata["vzBrCP"]["attributes"]["dn"].split(
-                        "/"
-                    )[1][3:],
-                    "scope": brcp_class_imdata["vzBrCP"]["attributes"]["scope"],
+                    "name": brcp_imdata["vzBrCP"]["attributes"]["name"],
+                    "tenant": brcp_imdata["vzBrCP"]["attributes"]["dn"].split("/")[1][
+                        3:
+                    ],
+                    "scope": brcp_imdata["vzBrCP"]["attributes"]["scope"],
                 }
             )
             source_grp, destination, subject = self.__contract_details(
-                brcp_class_imdata["vzBrCP"]["attributes"]["dn"]
+                brcp_imdata["vzBrCP"]["attributes"]["dn"]
             )
             contract_list[len(contract_list) - 1]["source"] = source_grp
             contract_list[len(contract_list) - 1]["destination"] = destination
@@ -265,17 +278,18 @@ class aci_kyc:
                     contract["source"][soi]["type"]
                 )
             for dei in range(len(contract["destination"])):
-                ws["L{}".format(dei + row_offset)] = "{}:{}:{}".format(
+                ws["M{}".format(dei + row_offset)] = "{}:{}:{}".format(
                     contract["destination"][dei]["tenant"],
                     contract["destination"][dei]["app"],
                     contract["destination"][dei]["name"],
                 )
-                ws["M{}".format(dei + row_offset)] = "{}".format(
+                ws["N{}".format(dei + row_offset)] = "{}".format(
                     contract["destination"][dei]["type"]
                 )
             entry_row_offset = 3
             for subject_it in contract["subject"]:
                 ws["C{}".format(entry_row_offset)] = subject_it["name"]
+                ws["L{}".format(entry_row_offset)] = subject_it["sgraph"]
                 smfrom = entry_row_offset
                 if "filter" in subject_it:
                     for filter_it in subject_it["filter"]:
@@ -310,6 +324,7 @@ class aci_kyc:
                             )
                         entry_row_offset += entry_size
                         ws.merge_cells("C{}:C{}".format(smfrom, entry_row_offset - 1))
+                        ws.merge_cells("L{}:L{}".format(smfrom, entry_row_offset - 1))
         wb.remove(wb["template"])
         wb.save("contracts.xlsx")
 
@@ -330,7 +345,8 @@ class aci_kyc:
                 return changeme
 
 
-contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
-contracts.apic_token()
-list = contracts.all_contracts()
-contracts.contract2excel(list)
+# get_contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
+# get_contracts.apic_token()
+# list = get_contracts.contract_info()
+# list = get_contracts.contract_info(tenant="common", contract="default")
+# get_contracts.contract2excel(list)
