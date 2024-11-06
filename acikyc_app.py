@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
+import json
+import sys
 import requests
 from openpyxl import Workbook
 from openpyxl import load_workbook
-import json
 
 __author__ = "Richard Buknicz"
 __copyright__ = "Copyright 2024, Routingalchemy ACI_KYC Project"
@@ -238,6 +239,8 @@ class aci_kyc:
         else:
             self.url = "/api/node/class/vzBrCP.json"
         brcp_data = self.__api_get()
+        if int(brcp_data["totalCount"]) == 0:
+            sys.exit("0 contaracts found. Contract or Tenant name not defined properly")
         for brcp_imdata in brcp_data["imdata"]:
             contract_list.append(
                 {
@@ -345,8 +348,8 @@ class aci_kyc:
                 return changeme
 
 
-# get_contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
-# get_contracts.apic_token()
+get_contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
+get_contracts.apic_token()
 # list = get_contracts.contract_info()
-# list = get_contracts.contract_info(tenant="common", contract="default")
+list = get_contracts.contract_info(tenant="common", contract="defdault")
 # get_contracts.contract2excel(list)
