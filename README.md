@@ -35,24 +35,26 @@ The files in the directory are:
 ## Usage
 1. Define an instance and provide the login credentials
 2. Login to the fabric and get a token
-3. Retrieve the Contract details
-4. print contract details to file 
+3. Retrieve single or all fabric contract details
+4. Generate contract details to file 
 
 ### Example
 
 ```
 contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
 contracts.apic_token()
-list = contracts.all_contracts()
+list = contracts.all_contracts() << for all contract details
+list = contracts.all_contracts(tenant="commom", contract="default") << for a single contract
 contracts.contract2excel(list)
 
 ```
  ## Roadmap
   
-  - [ ] More/various details form the contracts/subjects/filters
-  - [ ] Getting single/some contract output 
+  - [ ] More/various details form the contracts/subjects/filters/entries
+  - [X] Get a single contract output 
+  - [ ] Get a tenant's all contract
   - [ ] Graphviz diagram for graphical output
-  - [ ] Service graph indication
+  - [X] Service graph indication
   - [ ] EPG based contract representation
   - [ ] EPG/Subject lables
   - [ ] Preferred group membership

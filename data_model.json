@@ -30,19 +30,19 @@
                 "filters": [
                     {
                         "name": "web",
-                        "action": "permit/deny",
+                        "action": "permit",
                         "entries": [
                             {
                                 "name": "http",
                                 "ether_type": "tcp",
-                                "src_port": "",
-                                "dst_port": "80-80"
+                                "src_port": "any",
+                                "dst_port": "http"
                             },
                             {
                                 "name": "httpa",
                                 "ether_type": "tcp",
-                                "src_port": "",
-                                "dst_port": "8080-8080"
+                                "src_port": "any",
+                                "dst_port": "8080"
                             }
                         
                     ]
@@ -54,8 +54,8 @@
                         {
                             "name": "https",
                             "ether_type": "tcp",
-                            "src_port": "",
-                            "dst_port": "443-443"
+                            "src_port": "any",
+                            "dst_port": "https"
                         }
                     ]
                 }
@@ -71,8 +71,8 @@
                         {
                             "name": "dns_udp",
                             "ether_type": "udp",
-                            "src_port": "",
-                            "dst_port": "53-53"
+                            "src_port": "any",
+                            "dst_port": "dns"
                         }
                     ]
                 }
