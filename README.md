@@ -76,6 +76,7 @@ Every contract thats DN contains "prod" (searches in contract's DN) it can be a 
   - [ ] L3Out Ext-EPG network details
   - [ ] Master EPG membership
   - [ ] Intra-EPG contracts
+  - [X] Searching/matching multiple contracts 
  
  
  ## Notes
