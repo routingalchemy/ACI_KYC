@@ -33,26 +33,41 @@ The files in the directory are:
 
  
 ## Usage
-1. Define an instance and provide the login credentials
-2. Login to the fabric and get a token
-3. Retrieve single or all fabric contract details
-4. Generate contract details to file 
+```
+./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD 
+./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d DN_MACTH 
+./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -c CONTRACT_MATCH
+./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d DN_MACTH -c CONTRACT_MATCH
+
+"-d" is a bit more detailed search. It searches in "uni/tn-TENANT/brc-CONTRAC" DN .
+"-c" is only searches in the contracts name 
+
+```
 
 ### Example
 
 ```
-contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
-contracts.apic_token()
-list = contracts.all_contracts() << for all contract details
-list = contracts.all_contracts(tenant="commom", contract="default") << for a single contract
-contracts.contract2excel(list)
+All contract from the fabric:
+./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD 
+
+Matches the default contract form the common tenant or whatever contains "common" in its contract DN and "default" in its contract name:
+./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d common -c default
+
+Every contract thats name contains "http" (searches in contract's name):
+./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -c http
+
+Every contract thats DN contains "prod" (searches in contract's DN) it can be a tenant or a contract name:
+./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d prod
+
+
 
 ```
  ## Roadmap
   
   - [ ] More/various details form the contracts/subjects/filters/entries
+  - [ ] Summary page for the contracts
   - [X] Get a single contract output 
-  - [ ] Get a tenant's all contract
+  - [X] Get a tenant's all contract
   - [ ] Graphviz diagram for graphical output
   - [X] Service graph indication
   - [ ] EPG based contract representation
@@ -64,7 +79,8 @@ contracts.contract2excel(list)
  
  
  ## Notes
- 
+  
+  - In case of longer than 32 character contract names, Excel will notify you that some data might be lost "but not"! (working on it) 
   - Requires at least Python 3.10 [match case statement support](https://docs.python.org/3.10/tutorial/controlflow.html#match-statements)
   - The project files are formatted with [Black](https://github.com/psf/black)
   - Code has been tested on ACI 6.x only with EPG,vzAny,L3Out objects

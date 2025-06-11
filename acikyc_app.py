@@ -3,13 +3,17 @@
 import json
 import sys
 import requests
+import argparse
 from openpyxl import Workbook
 from openpyxl import load_workbook
+from urllib3.exceptions import InsecureRequestWarning
+
+requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
 
 __author__ = "Richard Buknicz"
 __copyright__ = "Copyright 2024, Routingalchemy ACI_KYC Project"
 __license__ = "GPL"
-__version__ = "0.3"
+__version__ = "0.4"
 __maintainer__ = "Richard Buknicz"
 __status__ = "Production"
 
@@ -29,10 +33,11 @@ class aci_kyc:
             "Accept": "application/json",
         }
         self.http_cert_verify = False
+        self.apic_token()
 
     def apic_token(self):
         """Getting a token from the ACI APIC"""
-        host = "https://{}/api/aaaLogin.json".format(self.hostname)
+        host = f"https://{self.hostname}/api/aaaLogin.json"
         data = {"aaaUser": {"attributes": {"name": self.username, "pwd": self.password}}}
         cookie_key = "APIC-cookie"
         cookie_value = 'response.json()["imdata"][0]["aaaLogin"]["attributes"]["token"]'
@@ -54,7 +59,7 @@ class aci_kyc:
     def __api_get(self):
         """Get request for retrieving the contract data"""
 
-        host = "https://{}{}".format(self.hostname, self.url)
+        host = f"https://{self.hostname}{self.url}"
         try:
             response = requests.get(
                 host,
@@ -69,7 +74,7 @@ class aci_kyc:
 
     def __contract_details(self, contract_dn):
         """Get a contract detail (DN)"""
-        self.url = "/api/node/mo/{}.json?query-target=subtree".format(contract_dn)
+        self.url = f"/api/node/mo/{contract_dn}.json?query-target=subtree"
         brcp_dn_data = self.__api_get()
         source_grp, destination, subject, filter = [], [], [], []
         for brcp_dn_imdata in brcp_dn_data["imdata"]:
@@ -128,9 +133,7 @@ class aci_kyc:
                         "revfltports": brcp_dn_imdata["vzSubj"]["attributes"]["revFltPorts"],
                     }
                 )
-                self.url = "/api/node/mo/{}.json?query-target=subtree".format(
-                    brcp_dn_imdata["vzSubj"]["attributes"]["dn"]
-                )
+                self.url = f"/api/node/mo/{brcp_dn_imdata['vzSubj']['attributes']['dn']}.json?query-target=subtree"
                 subject_dn_data = self.__api_get()
                 for subject_dn_imdata in subject_dn_data["imdata"]:
                     sgraph = "N/A"
@@ -142,9 +145,7 @@ class aci_kyc:
                         fltatt = next(iter(subject_dn_imdata.keys()))
                         filter.append({"action": subject_dn_imdata[fltatt]["attributes"]["action"]})
                         if subject_dn_imdata[fltatt]["attributes"]["tDn"] != "":
-                            self.url = "/api/node/mo/{}.json?query-target=subtree".format(
-                                subject_dn_imdata[fltatt]["attributes"]["tDn"]
-                            )
+                            self.url = f"/api/node/mo/{subject_dn_imdata[fltatt]['attributes']['tDn']}.json?query-target=subtree"
                             filter_dn_data = self.__api_get()
                             entries = []
                             for filter_dn_imdata in filter_dn_data["imdata"]:
@@ -183,18 +184,7 @@ class aci_kyc:
                                             "tcprules": filter_dn_imdata["vzEntry"]["attributes"][
                                                 "tcpRules"
                                             ],
-                                            "icmp": "icmpv4: {} \n icmpv6: {}".format(
-                                                self.__object_norm(
-                                                    filter_dn_imdata["vzEntry"]["attributes"][
-                                                        "icmpv4T"
-                                                    ]
-                                                ),
-                                                self.__object_norm(
-                                                    filter_dn_imdata["vzEntry"]["attributes"][
-                                                        "icmpv6T"
-                                                    ]
-                                                ),
-                                            ),
+                                            "icmp": f"icmpv4: {self.__object_norm(filter_dn_imdata['vzEntry']['attributes']['icmpv4T'])} \n icmpv6: {self.__object_norm(filter_dn_imdata['vzEntry']['attributes']['icmpv6T'])}",
                                             "applyToFrag": filter_dn_imdata["vzEntry"][
                                                 "attributes"
                                             ]["applyToFrag"],
@@ -208,20 +198,25 @@ class aci_kyc:
     def contract_info(self, **kwargs):
         """Get contract info from the fabric"""
         contract_list = []
-        if kwargs:
-            self.url = "/api/node/mo/uni/tn-{}/brc-{}.json".format(
-                kwargs["tenant"], kwargs["contract"]
-            )
-        else:
-            self.url = "/api/node/class/vzBrCP.json"
+        # if kwargs:
+        #    self.url = f"/api/node/mo/uni/tn-{kwargs['tenant']}/brc-{kwargs['contract']}.json"
+        # else:
+        #    self.url = "/api/node/class/vzBrCP.json"
+        self.url = '/api/node/class/vzBrCP.json?query-target-filter=and(wcard(vzBrCP.dn,"{}"),wcard(vzBrCP.name,"{}"))'.format(
+            kwargs["dn"], kwargs["contract"]
+        )
         brcp_data = self.__api_get()
         if int(brcp_data["totalCount"]) == 0:
             sys.exit("0 contaracts found. Contract or Tenant name not defined properly")
+        print(f"{brcp_data['totalCount']} contracts found")
         for brcp_imdata in brcp_data["imdata"]:
+            cname = brcp_imdata["vzBrCP"]["attributes"]["name"]
+            ctenant = brcp_imdata["vzBrCP"]["attributes"]["dn"].split("/")[1].split("tn-")[1]
+            print(f"Extracting info for {cname} contract from {ctenant} tenant")
             contract_list.append(
                 {
-                    "name": brcp_imdata["vzBrCP"]["attributes"]["name"],
-                    "tenant": brcp_imdata["vzBrCP"]["attributes"]["dn"].split("/")[1][3:],
+                    "name": cname,
+                    "tenant": ctenant,
                     "scope": brcp_imdata["vzBrCP"]["attributes"]["scope"],
                 }
             )
@@ -239,61 +234,43 @@ class aci_kyc:
         row_offset = 3
         for contract in clist:
             ws = wb.copy_worksheet(wb["template"])
-            ws.title = "{}.{}".format(contract["tenant"], contract["name"])
+            ws.title = f"{contract['name']}"
             ws["B1"] = contract["name"]
             ws["D1"] = contract["tenant"]
             ws["F1"] = contract["scope"]
             for soi in range(len(contract["source"])):  # source and destination for loop to colapse
-                ws["A{}".format(soi + row_offset)] = "{}:{}:{}".format(
-                    contract["source"][soi]["tenant"],
-                    contract["source"][soi]["app"],
-                    contract["source"][soi]["name"],
+                ws[f"A{soi + row_offset}"] = (
+                    f"{contract['source'][soi]['tenant']}:{contract['source'][soi]['app']}:{contract['source'][soi]['name']}"
                 )
-                ws["B{}".format(soi + row_offset)] = "{}".format(contract["source"][soi]["type"])
+                ws[f"B{soi + row_offset}"] = f"{contract['source'][soi]['type']}"
             for dei in range(len(contract["destination"])):
-                ws["M{}".format(dei + row_offset)] = "{}:{}:{}".format(
-                    contract["destination"][dei]["tenant"],
-                    contract["destination"][dei]["app"],
-                    contract["destination"][dei]["name"],
+                ws[f"M{dei + row_offset}"] = (
+                    f"{contract['destination'][dei]['tenant']}:{contract['destination'][dei]['app']}:{contract['destination'][dei]['name']}"
                 )
-                ws["N{}".format(dei + row_offset)] = "{}".format(
-                    contract["destination"][dei]["type"]
-                )
+                ws[f"N{dei + row_offset}"] = f"{contract['destination'][dei]['type']}"
             entry_row_offset = 3
             for subject_it in contract["subject"]:
-                ws["C{}".format(entry_row_offset)] = subject_it["name"]
-                ws["L{}".format(entry_row_offset)] = subject_it["sgraph"]
+                ws[f"C{entry_row_offset}"] = subject_it["name"]
+                ws[f"L{entry_row_offset}"] = subject_it["sgraph"]
                 smfrom = entry_row_offset
                 if "filter" in subject_it:
                     for filter_it in subject_it["filter"]:
                         fmfrom = entry_row_offset
-                        ws["D{}".format(entry_row_offset)] = filter_it["name"]
-                        ws["E{}".format(entry_row_offset)] = filter_it["action"]
+                        ws[f"D{entry_row_offset}"] = filter_it["name"]
+                        ws[f"E{entry_row_offset}"] = filter_it["action"]
                         entry_size = len(filter_it["entries"])
                         for eni in range(entry_size):
-                            ws["F{}".format(eni + entry_row_offset)] = filter_it["entries"][eni][
-                                "name"
-                            ]
-                            ws["G{}".format(eni + entry_row_offset)] = filter_it["entries"][eni][
-                                "etht"
-                            ]
-                            ws["H{}".format(eni + entry_row_offset)] = filter_it["entries"][eni][
-                                "sport"
-                            ]
-                            ws["I{}".format(eni + entry_row_offset)] = filter_it["entries"][eni][
-                                "dport"
-                            ]
-                            ws["J{}".format(eni + entry_row_offset)] = filter_it["entries"][eni][
-                                "stateful"
-                            ]
-                            ws["K{}".format(eni + entry_row_offset)] = filter_it["entries"][eni][
-                                "tcprules"
-                            ]
-                            ws.merge_cells("D{}:D{}".format(fmfrom, fmfrom + entry_size - 1))
-                            ws.merge_cells("E{}:E{}".format(fmfrom, fmfrom + entry_size - 1))
+                            ws[f"F{eni + entry_row_offset}"] = filter_it["entries"][eni]["name"]
+                            ws[f"G{eni + entry_row_offset}"] = filter_it["entries"][eni]["etht"]
+                            ws[f"H{eni + entry_row_offset}"] = filter_it["entries"][eni]["sport"]
+                            ws[f"I{eni + entry_row_offset}"] = filter_it["entries"][eni]["dport"]
+                            ws[f"J{eni + entry_row_offset}"] = filter_it["entries"][eni]["stateful"]
+                            ws[f"K{eni + entry_row_offset}"] = filter_it["entries"][eni]["tcprules"]
+                            ws.merge_cells(f"D{fmfrom}:D{fmfrom + entry_size - 1}")
+                            ws.merge_cells(f"E{fmfrom}:E{fmfrom + entry_size - 1}")
                         entry_row_offset += entry_size
-                        ws.merge_cells("C{}:C{}".format(smfrom, entry_row_offset - 1))
-                        ws.merge_cells("L{}:L{}".format(smfrom, entry_row_offset - 1))
+                        ws.merge_cells(f"C{smfrom}:C{entry_row_offset - 1}")
+                        ws.merge_cells(f"L{smfrom}:L{entry_row_offset - 1}")
         wb.remove(wb["template"])
         wb.save("contracts.xlsx")
 
@@ -302,7 +279,7 @@ class aci_kyc:
         if fport == tport:
             return self.__object_norm(fport)
         else:
-            return "{}-{}".format(self.__object_norm(fport), self.__object_norm(tport))
+            return f"{self.__object_norm(fport)}-{self.__object_norm(tport)}"
 
     def __object_norm(self, changeme):
         """Auxaliry function to replace ACI object names with meaninful ones"""
@@ -321,8 +298,35 @@ class aci_kyc:
                 return changeme
 
 
-# get_contracts = aci_kyc("sandboxapicdc.cisco.com", "admin", "!v3G@!4@Y")
-# get_contracts.apic_token()
-# list = get_contracts.contract_info()
-# list = get_contracts.contract_info(tenant="common", contract="default")
-# get_contracts.contract2excel(list)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        description="ACI - Know Your Contracts. Visualising ACI contract"
+    )
+    parser.add_argument("-u", "--user", help="Username", required=True, metavar="username")
+    parser.add_argument("-p", "--passwd", help="Password", required=True, metavar="password")
+    parser.add_argument(
+        "-a", "--apic", help="APIC IP/URL", required=True, metavar="apic_ip_or_fqdn"
+    )
+    parser.add_argument(
+        "-c",
+        "--contract",
+        help="Contract search/match ",
+        nargs="?",
+        default="",
+        metavar="contract",
+    )
+    parser.add_argument(
+        "-d",
+        "--dn",
+        help="Distinguished name seach/match. Alows to match a Tenant or Contract ",
+        nargs="?",
+        default="",
+        metavar="dn",
+    )
+    args = parser.parse_args()
+
+    kyc_data = aci_kyc(args.apic, args.user, args.passwd)
+
+    kyc_list = kyc_data.contract_info(dn=args.dn, contract=args.contract)  # specific contract
+
+    kyc_data.contract2excel(kyc_list)
