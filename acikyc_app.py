@@ -198,10 +198,6 @@ class aci_kyc:
     def contract_info(self, **kwargs):
         """Get contract info from the fabric"""
         contract_list = []
-        # if kwargs:
-        #    self.url = f"/api/node/mo/uni/tn-{kwargs['tenant']}/brc-{kwargs['contract']}.json"
-        # else:
-        #    self.url = "/api/node/class/vzBrCP.json"
         self.url = '/api/node/class/vzBrCP.json?query-target-filter=and(wcard(vzBrCP.dn,"{}"),wcard(vzBrCP.name,"{}"))'.format(
             kwargs["dn"], kwargs["contract"]
         )
