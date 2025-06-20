@@ -34,10 +34,10 @@ The files in the directory are:
  
 ## Usage
 ```
-./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD 
-./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d DN_MACTH 
-./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -c CONTRACT_MATCH
-./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d DN_MACTH -c CONTRACT_MATCH
+./acikyc_app.py -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD 
+./acikyc_app.py -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d DN_MACTH 
+./acikyc_app.py -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -c CONTRACT_MATCH
+./acikyc_app.py -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d DN_MACTH -c CONTRACT_MATCH
 
 "-d" is a bit more detailed search. It searches in "uni/tn-TENANT/brc-CONTRAC" DN .
 "-c" is only searches in the contracts name 
@@ -48,16 +48,16 @@ The files in the directory are:
 
 ```
 All contract from the fabric:
-./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD 
+./acikyc_app.py -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD 
 
 Matches the default contract form the common tenant or whatever contains "common" in its contract DN and "default" in its contract name:
-./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d common -c default
+./acikyc_app.py -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d common -c default
 
 Every contract thats name contains "http" (searches in contract's name):
-./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -c http
+./acikyc_app.py -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -c http
 
 Every contract thats DN contains "prod" (searches in contract's DN) it can be a tenant or a contract name:
-./acikyc_app -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d prod
+./acikyc_app.py -a APIC_IP_OR_FQDN -u USERNAME -p PASSWORD -d prod
 
 
 

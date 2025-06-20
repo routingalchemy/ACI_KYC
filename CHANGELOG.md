@@ -17,3 +17,5 @@
 # 0.4.1 Clean
 - removeing comments
 
+# 0.4.2 Doc fix
+- Updating documentation
